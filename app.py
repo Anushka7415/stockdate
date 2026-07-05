@@ -14,11 +14,47 @@ st.title("📈 Live Stock Market Dashboard")
 
 # Sidebar
 st.sidebar.header("Settings")
-ticker = st.sidebar.text_input("Stock Symbol", "AAPL")
+
+search_text = st.sidebar.text_input(
+    "Search Stock",
+    placeholder="Type company name or symbol..."
+)
+
+ticker = None
+
+if search_text:
+    search_results = yf.Search(
+        search_text,
+        max_results=10,
+        news_count=0
+    ).quotes
+
+    suggestions = {}
+
+    for item in search_results:
+        symbol = item.get("symbol")
+        name = (
+            item.get("longname")
+            or item.get("shortname")
+            or symbol
+        )
+
+        if symbol:
+            suggestions[f"{name} ({symbol})"] = symbol
+
+    if suggestions:
+        selected_stock = st.sidebar.selectbox(
+            "Matching stocks",
+            options=list(suggestions.keys())
+        )
+
+        ticker = suggestions[selected_stock]
+    else:
+        st.sidebar.warning("No matching stock found")
 period = st.sidebar.selectbox("Time Period", ["1mo", "3mo", "6mo", "1y", "2y"])
 auto_refresh = st.sidebar.checkbox("Auto Refresh (60s)")
 
-if st.sidebar.button("Analyze") or ticker:
+if ticker and st.sidebar.button("Analyze"):
     try:
         # Data fetch
         stock = yf.Ticker(ticker)
